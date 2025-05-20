@@ -1,0 +1,346 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>🧘 Ayurvedic Multimodal Consultant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2>🧘 Ayurvedic Multimodal Consultant</h2>
+
+    <form id="consultForm" method="POST" enctype="multipart/form-data">
+        <label>Text Query:</label>
+        <textarea name="text" rows="4" placeholder="E.g., How to balance Vata dosha?"></textarea><br>
+
+        <label>Upload Image:</label>
+        <input type="file" name="image" accept="image/*"><br>
+
+        <label>Record Audio:</label><br>
+        <button type="button" id="recordBtn">🎤 Start Recording</button>
+        <button type="button" id="stopBtn" disabled>🛑 Stop</button>
+        <audio id="audioPlayback" controls></audio>
+        <input type="file" id="audioInput" name="audio" accept="audio/*" hidden>
+
+        <label><input type="checkbox" name="generate_visual"> Generate Ayurvedic Illustration</label><br><br>
+
+        <input type="submit" value="Get Ayurvedic Advice">
+    </form>
+
+    {% if response %}
+        <div class="output">
+            <h3>GPT-4o Response</h3>
+            <p>{{ response | safe }}</p>
+        </div>
+    {% endif %}
+
+    {% if generated_img %}
+        <div class="output">
+            <h3>Generated Illustration</h3>
+            <img src="data:image/jpeg;base64,{{ generated_img }}" width="400"/>
+        </div>
+    {% endif %}
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        const recordBtn = document.getElementById("recordBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const audioPlayback = document.getElementById("audioPlayback");
+        const audioInput = document.getElementById("audioInput");
+
+        recordBtn.onclick = async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            recordedChunks = [];
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'audio/wav' });
+                const file = new File([blob], "recording.wav", { type: "audio/wav" });
+
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                audioInput.files = dataTransfer.files;
+
+                audioPlayback.src = URL.createObjectURL(blob);
+            };
+
+            mediaRecorder.start();
+            recordBtn.disabled = true;
+            stopBtn.disabled = false;
+        };
+
+        stopBtn.onclick = () => {
+            mediaRecorder.stop();
+            recordBtn.disabled = false;
+            stopBtn.disabled = true;
+        };
+    </script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayurvedic Multimodal Consultant</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c7d59;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .input-section {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c7d59;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+            resize: vertical;
+        }
+        .image-upload {
+            margin: 15px 0;
+        }
+        #imagePreview {
+            max-width: 300px;
+            max-height: 300px;
+            margin-top: 10px;
+            display: none;
+        }
+        .audio-controls {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        button {
+            background-color: #2c7d59;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #1f5e43;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #visualCheckbox {
+            margin: 15px 0;
+        }
+        .output-section {
+            margin-top: 30px;
+        }
+        #outputText {
+            width: 100%;
+            min-height: 300px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        #generatedImage {
+            max-width: 100%;
+            margin-top: 15px;
+            display: none;
+        }
+        .status {
+            margin: 10px 0;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧘 Ayurvedic Multimodal Consultant</h1>
+        
+        <div class="input-section">
+            <label for="textInput">Ask a question (text)</label>
+            <textarea id="textInput" placeholder="E.g., How to balance Vata dosha?"></textarea>
+        </div>
+        
+        <div class="input-section">
+            <label for="imageInput">Upload an image (optional)</label>
+            <input type="file" id="imageInput" accept="image/*" class="image-upload">
+            <img id="imagePreview" alt="Preview">
+        </div>
+        
+        <div class="input-section">
+            <label>Speak your query</label>
+            <div class="audio-controls">
+                <button id="startRecording">Start Recording</button>
+                <button id="stopRecording" disabled>Stop Recording</button>
+                <audio id="audioPlayback" controls style="display: none;"></audio>
+            </div>
+            <div id="recordingStatus" class="status">Ready to record</div>
+        </div>
+        
+        <div id="visualCheckbox">
+            <input type="checkbox" id="generateVisual">
+            <label for="generateVisual">Generate Ayurvedic Illustration</label>
+        </div>
+        
+        <button id="submitBtn">Get Ayurvedic Advice</button>
+        
+        <div class="output-section">
+            <label for="outputText">Response</label>
+            <div id="outputText"></div>
+            <img id="generatedImage" alt="Generated Ayurvedic illustration">
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const textInput = document.getElementById('textInput');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const startRecordingBtn = document.getElementById('startRecording');
+        const stopRecordingBtn = document.getElementById('stopRecording');
+        const audioPlayback = document.getElementById('audioPlayback');
+        const recordingStatus = document.getElementById('recordingStatus');
+        const generateVisual = document.getElementById('generateVisual');
+        const submitBtn = document.getElementById('submitBtn');
+        const outputText = document.getElementById('outputText');
+        const generatedImage = document.getElementById('generatedImage');
+
+        // Audio recording variables
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob = null;
+
+        // Image preview
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    imagePreview.src = event.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Audio recording
+        startRecordingBtn.addEventListener('click', async function() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = function(event) {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = function() {
+                    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    audioPlayback.src = URL.createObjectURL(audioBlob);
+                    audioPlayback.style.display = 'block';
+                    recordingStatus.textContent = 'Recording complete. Ready to submit.';
+                };
+                
+                audioChunks = [];
+                mediaRecorder.start();
+                startRecordingBtn.disabled = true;
+                stopRecordingBtn.disabled = false;
+                recordingStatus.textContent = 'Recording... Speak now.';
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                recordingStatus.textContent = 'Error accessing microphone. Please check permissions.';
+            }
+        });
+
+        stopRecordingBtn.addEventListener('click', function() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                startRecordingBtn.disabled = false;
+                stopRecordingBtn.disabled = true;
+                
+                // Stop all tracks in the stream
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // Submit to backend
+        submitBtn.addEventListener('click', async function() {
+            const text = textInput.value.trim();
+            const generateImage = generateVisual.checked;
+            
+            if (!text && !audioBlob && !imageInput.files[0]) {
+                outputText.textContent = 'Please provide at least one input method (text, audio, or image).';
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            outputText.textContent = 'Processing your request...';
+            
+            try {
+                const formData = new FormData();
+                if (text) formData.append('text', text);
+                if (audioBlob) formData.append('audio', audioBlob, 'recording.wav');
+                if (imageInput.files[0]) formData.append('image', imageInput.files[0]);
+                formData.append('generate_visual', generateImage);
+                
+                const response = await fetch('/ayurveda-consult', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server responded with status ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                outputText.textContent = result.text || 'No response text received.';
+                
+                if (result.image) {
+                    generatedImage.src = `data:image/jpeg;base64,${result.image}`;
+                    generatedImage.style.display = 'block';
+                } else {
+                    generatedImage.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                outputText.textContent = `Error: ${error.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
