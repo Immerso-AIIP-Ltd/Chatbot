@@ -9,7 +9,9 @@ from openai import OpenAI
 import tempfile
 import requests
 from flask_cors import CORS
+from dotenv import load_dotenv
 
+load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
