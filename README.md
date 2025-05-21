@@ -12,10 +12,10 @@ This uses the gpt-4 and dall-e and whisper model for generating answers related 
 ## 2. Create a .env file 
 add OPENAI_API_KEY=your key
 
-## 2.Install the required Python packages:
+## 3.Install the required Python packages:
 
 pip install -r requirements.txt
 
-## 3.Run the application:
+## 4.Run the application:
 
 python app.py
