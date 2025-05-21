@@ -1,92 +1,9 @@
-<!-- <!DOCTYPE html>
-<html>
-<head>
-    <title>🧘 Ayurvedic Multimodal Consultant</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <h2>🧘 Ayurvedic Multimodal Consultant</h2>
-
-    <form id="consultForm" method="POST" enctype="multipart/form-data">
-        <label>Text Query:</label>
-        <textarea name="text" rows="4" placeholder="E.g., How to balance Vata dosha?"></textarea><br>
-
-        <label>Upload Image:</label>
-        <input type="file" name="image" accept="image/*"><br>
-
-        <label>Record Audio:</label><br>
-        <button type="button" id="recordBtn">🎤 Start Recording</button>
-        <button type="button" id="stopBtn" disabled>🛑 Stop</button>
-        <audio id="audioPlayback" controls></audio>
-        <input type="file" id="audioInput" name="audio" accept="audio/*" hidden>
-
-        <label><input type="checkbox" name="generate_visual"> Generate Ayurvedic Illustration</label><br><br>
-
-        <input type="submit" value="Get Ayurvedic Advice">
-    </form>
-
-    {% if response %}
-        <div class="output">
-            <h3>GPT-4o Response</h3>
-            <p>{{ response | safe }}</p>
-        </div>
-    {% endif %}
-
-    {% if generated_img %}
-        <div class="output">
-            <h3>Generated Illustration</h3>
-            <img src="data:image/jpeg;base64,{{ generated_img }}" width="400"/>
-        </div>
-    {% endif %}
-
-    <script>
-        let mediaRecorder;
-        let recordedChunks = [];
-
-        const recordBtn = document.getElementById("recordBtn");
-        const stopBtn = document.getElementById("stopBtn");
-        const audioPlayback = document.getElementById("audioPlayback");
-        const audioInput = document.getElementById("audioInput");
-
-        recordBtn.onclick = async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            recordedChunks = [];
-
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) recordedChunks.push(e.data);
-            };
-
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'audio/wav' });
-                const file = new File([blob], "recording.wav", { type: "audio/wav" });
-
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                audioInput.files = dataTransfer.files;
-
-                audioPlayback.src = URL.createObjectURL(blob);
-            };
-
-            mediaRecorder.start();
-            recordBtn.disabled = true;
-            stopBtn.disabled = false;
-        };
-
-        stopBtn.onclick = () => {
-            mediaRecorder.stop();
-            recordBtn.disabled = false;
-            stopBtn.disabled = true;
-        };
-    </script>
-</body>
-</html> -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ayurvedic Multimodal Consultant</title>
     <style>
         body {
@@ -109,6 +26,23 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            }
+
+        .header-container img {
+            height: 50px;
+            width: auto;
+            }
+
+        .header-container h1 {
+            margin: 0;
+            color: #2c7d59;
+            }
         .input-section {
             margin-bottom: 20px;
         }
@@ -170,6 +104,7 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             background-color: #f9f9f9;
+            white-space: pre-wrap;
         }
         #generatedImage {
             max-width: 100%;
@@ -181,11 +116,37 @@
             font-style: italic;
             color: #666;
         }
+        /* Clear Image Button */
+        #clearImageBtn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-weight: bold;
+            display: none;
+            cursor: pointer;
+            line-height: 20px;
+            padding: 0;
+        }
+        /* Container for image + clear button */
+        .image-preview-wrapper {
+            position: relative;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🧘 Ayurvedic Multimodal Consultant</h1>
+        <div class="header-container">
+            <img src="/static/logo.png" alt="Logo" />
+            <h1>🧘 Ayurvedic Multimodal Consultant</h1>
+        </div>
+
         
         <div class="input-section">
             <label for="textInput">Ask a question (text)</label>
@@ -194,8 +155,11 @@
         
         <div class="input-section">
             <label for="imageInput">Upload an image (optional)</label>
-            <input type="file" id="imageInput" accept="image/*" class="image-upload">
-            <img id="imagePreview" alt="Preview">
+            <input type="file" id="imageInput" accept="image/*" class="image-upload" />
+            <div class="image-preview-wrapper">
+                <img id="imagePreview" alt="Preview" />
+                <button id="clearImageBtn" title="Clear Image">&times;</button>
+            </div>
         </div>
         
         <div class="input-section">
@@ -209,8 +173,8 @@
         </div>
         
         <div id="visualCheckbox">
-            <input type="checkbox" id="generateVisual">
-            <label for="generateVisual">Generate Ayurvedic Illustration</label>
+            <input type="checkbox" id="generateVisual" />
+            <label for="generateVisual">Click checkbox to generate image</label>
         </div>
         
         <button id="submitBtn">Get Ayurvedic Advice</button>
@@ -218,7 +182,7 @@
         <div class="output-section">
             <label for="outputText">Response</label>
             <div id="outputText"></div>
-            <img id="generatedImage" alt="Generated Ayurvedic illustration">
+            <img id="generatedImage" alt="Click checkbox to generate image" />
         </div>
     </div>
 
@@ -227,6 +191,7 @@
         const textInput = document.getElementById('textInput');
         const imageInput = document.getElementById('imageInput');
         const imagePreview = document.getElementById('imagePreview');
+        const clearImageBtn = document.getElementById('clearImageBtn');
         const startRecordingBtn = document.getElementById('startRecording');
         const stopRecordingBtn = document.getElementById('stopRecording');
         const audioPlayback = document.getElementById('audioPlayback');
@@ -241,7 +206,7 @@
         let audioChunks = [];
         let audioBlob = null;
 
-        // Image preview
+        // Image preview & clear button logic
         imageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -249,9 +214,17 @@
                 reader.onload = function(event) {
                     imagePreview.src = event.target.result;
                     imagePreview.style.display = 'block';
+                    clearImageBtn.style.display = 'block';
                 };
                 reader.readAsDataURL(file);
             }
+        });
+
+        clearImageBtn.addEventListener('click', function() {
+            imagePreview.src = '';
+            imagePreview.style.display = 'none';
+            clearImageBtn.style.display = 'none';
+            imageInput.value = ''; // Reset file input
         });
 
         // Audio recording
@@ -307,6 +280,8 @@
             
             submitBtn.disabled = true;
             outputText.textContent = 'Processing your request...';
+            generatedImage.style.display = 'none';
+            generatedImage.src = '';
             
             try {
                 const formData = new FormData();
@@ -326,7 +301,12 @@
                 
                 const result = await response.json();
                 
-                outputText.textContent = result.text || 'No response text received.';
+                if (result.text) {
+                    outputText.innerHTML = marked.parse(result.text);
+                } else {
+                    outputText.textContent = 'No response text received.';
+                }
+
                 
                 if (result.image) {
                     generatedImage.src = `data:image/jpeg;base64,${result.image}`;
@@ -334,6 +314,7 @@
                 } else {
                     generatedImage.style.display = 'none';
                 }
+                
             } catch (error) {
                 console.error('Error:', error);
                 outputText.textContent = `Error: ${error.message}`;
