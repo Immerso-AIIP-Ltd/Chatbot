@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -133,11 +134,41 @@
             line-height: 20px;
             padding: 0;
         }
-        /* Container for image + clear button */
+   
         .image-preview-wrapper {
             position: relative;
             display: inline-block;
         }
+        #chatbox {
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: #fff;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+
+        .user-message, .bot-message {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: #d0f0e8;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .bot-message {
+            background-color: #e0e0e0;
+            align-self: flex-start;
+            margin-right: auto;
+        }
+
     </style>
 </head>
 <body>
@@ -145,6 +176,10 @@
         <div class="header-container">
             <img src="/static/logo.png" alt="Logo" />
             <h1>🧘 Ayurvedic Multimodal Consultant</h1>
+            <div style="text-align:right; margin-bottom:10px;">
+                <button id="newChatBtn" style="background-color:#ff4d4d;">New Chat</button>
+            </div>
+
         </div>
 
         
@@ -178,6 +213,7 @@
         </div>
         
         <button id="submitBtn">Get Ayurvedic Advice</button>
+        <div id="chatbox"></div>
         
         <div class="output-section">
             <label for="outputText">Response</label>
@@ -185,9 +221,46 @@
             <img id="generatedImage" alt="Click checkbox to generate image" />
         </div>
     </div>
-
     <script>
-        // DOM elements
+        
+
+        document.getElementById("sendBtn").addEventListener("click", sendMessage);
+        document.getElementById("userInput").addEventListener("keypress", function (e) {
+            if (e.key === "Enter") sendMessage();
+        });
+
+        document.getElementById("newChatBtn").addEventListener("click", async function () {
+            const response = await fetch("/new-chat", { method: "POST" });
+            conversationHistory = [];
+            document.getElementById("chatbox").innerHTML = "";
+        });
+
+        async function sendMessage() {
+            const userInput = document.getElementById("userInput").value.trim();
+            if (!userInput) return;
+
+            conversationHistory.push({ role: "user", content: userInput });
+
+            const chatbox = document.getElementById("chatbox");
+            chatbox.innerHTML += `<div class="message user">You: ${userInput}</div>`;
+            document.getElementById("userInput").value = "";
+
+            const response = await fetch("/ayurveda-consult", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages: conversationHistory })
+            });
+
+            const data = await response.json();
+            const assistantReply = data.reply;
+            conversationHistory.push({ role: "assistant", content: assistantReply });
+
+            chatbox.innerHTML += `<div class="message assistant">Assistant: ${assistantReply}</div>`;
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+        </script>
+
+   <script>
         const textInput = document.getElementById('textInput');
         const imageInput = document.getElementById('imageInput');
         const imagePreview = document.getElementById('imagePreview');
@@ -198,20 +271,18 @@
         const recordingStatus = document.getElementById('recordingStatus');
         const generateVisual = document.getElementById('generateVisual');
         const submitBtn = document.getElementById('submitBtn');
+        const newChatBtn = document.getElementById('newChatBtn');
         const outputText = document.getElementById('outputText');
         const generatedImage = document.getElementById('generatedImage');
 
-        // Audio recording variables
-        let mediaRecorder;
-        let audioChunks = [];
-        let audioBlob = null;
+        let mediaRecorder, audioChunks = [], audioBlob = null;
+        let conversationHistory = [];
 
-        // Image preview & clear button logic
-        imageInput.addEventListener('change', function(e) {
+        imageInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(event) {
+                reader.onload = function (event) {
                     imagePreview.src = event.target.result;
                     imagePreview.style.display = 'block';
                     clearImageBtn.style.display = 'block';
@@ -220,108 +291,142 @@
             }
         });
 
-        clearImageBtn.addEventListener('click', function() {
+        clearImageBtn.addEventListener('click', function () {
             imagePreview.src = '';
             imagePreview.style.display = 'none';
             clearImageBtn.style.display = 'none';
-            imageInput.value = ''; // Reset file input
+            imageInput.value = '';
         });
 
-        // Audio recording
-        startRecordingBtn.addEventListener('click', async function() {
+        startRecordingBtn.addEventListener('click', async function () {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
-                
-                mediaRecorder.ondataavailable = function(event) {
-                    if (event.data.size > 0) {
-                        audioChunks.push(event.data);
-                    }
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) audioChunks.push(event.data);
                 };
-                
-                mediaRecorder.onstop = function() {
+
+                mediaRecorder.onstop = () => {
                     audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                     audioPlayback.src = URL.createObjectURL(audioBlob);
                     audioPlayback.style.display = 'block';
                     recordingStatus.textContent = 'Recording complete. Ready to submit.';
                 };
-                
-                audioChunks = [];
+
                 mediaRecorder.start();
                 startRecordingBtn.disabled = true;
                 stopRecordingBtn.disabled = false;
-                recordingStatus.textContent = 'Recording... Speak now.';
+                recordingStatus.textContent = 'Recording...';
             } catch (error) {
-                console.error('Error accessing microphone:', error);
-                recordingStatus.textContent = 'Error accessing microphone. Please check permissions.';
+                console.error(error);
+                recordingStatus.textContent = 'Microphone error. Check permissions.';
             }
         });
 
-        stopRecordingBtn.addEventListener('click', function() {
+        stopRecordingBtn.addEventListener('click', () => {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
                 startRecordingBtn.disabled = false;
                 stopRecordingBtn.disabled = true;
-                
-                // Stop all tracks in the stream
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
             }
         });
 
-        // Submit to backend
-        submitBtn.addEventListener('click', async function() {
+        newChatBtn.addEventListener('click', async function () {
+            await fetch('/new-chat', { method: 'POST' });
+            conversationHistory = [];
+
+            textInput.value = '';
+            imagePreview.src = '';
+            imagePreview.style.display = 'none';
+            clearImageBtn.style.display = 'none';
+            audioBlob = null;
+            audioPlayback.src = '';
+            audioPlayback.style.display = 'none';
+            outputText.textContent = '';
+            generatedImage.src = '';
+            generatedImage.style.display = 'none';
+            recordingStatus.textContent = 'Ready to record';
+
+            document.getElementById("chatbox").innerHTML = '';
+        });
+
+        submitBtn.addEventListener('click', async () => {
             const text = textInput.value.trim();
             const generateImage = generateVisual.checked;
-            
+
             if (!text && !audioBlob && !imageInput.files[0]) {
-                outputText.textContent = 'Please provide at least one input method (text, audio, or image).';
+                outputText.textContent = 'Please enter text, image, or audio.';
                 return;
             }
-            
+
             submitBtn.disabled = true;
-            outputText.textContent = 'Processing your request...';
+            outputText.textContent = 'Thinking...';
             generatedImage.style.display = 'none';
             generatedImage.src = '';
-            
+
             try {
                 const formData = new FormData();
                 if (text) formData.append('text', text);
                 if (audioBlob) formData.append('audio', audioBlob, 'recording.wav');
                 if (imageInput.files[0]) formData.append('image', imageInput.files[0]);
                 formData.append('generate_visual', generateImage);
-                
+                formData.append('conversation', JSON.stringify(conversationHistory));
+
                 const response = await fetch('/ayurveda-consult', {
                     method: 'POST',
                     body: formData
                 });
-                
-                if (!response.ok) {
-                    throw new Error(`Server responded with status ${response.status}`);
-                }
-                
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
                 const result = await response.json();
-                
+                const chatbox = document.getElementById('chatbox');
+
+                const userBubble = document.createElement('div');
+                userBubble.className = 'user-message';
+                userBubble.innerHTML = `<strong>You:</strong> ${text || '[Voice/Image]'}`;
+                chatbox.appendChild(userBubble);
                 if (result.text) {
-                    outputText.innerHTML = marked.parse(result.text);
+                    const botBubble = document.createElement('div');
+                    botBubble.className = 'bot-message';
+                    botBubble.innerHTML = `<strong>Assistant:</strong> ${marked.parse(result.text)}`;
+                    chatbox.appendChild(botBubble);
                 } else {
-                    outputText.textContent = 'No response text received.';
+                    const errorBubble = document.createElement('div');
+                    errorBubble.className = 'bot-message';
+                    errorBubble.innerHTML = `<strong>Assistant:</strong> No response.`;
+                    chatbox.appendChild(errorBubble);
                 }
 
-                
+                if (result.image) {
+                    const image = document.createElement('img');
+                    image.src = 'data:image/jpeg;base64,' + result.image;
+                    image.style.maxWidth = '100%';
+                    image.style.marginTop = '1rem';
+                    chatbox.appendChild(image);
+                }
+
+                chatbox.scrollTop = chatbox.scrollHeight;
+
+
                 if (result.image) {
                     generatedImage.src = `data:image/jpeg;base64,${result.image}`;
                     generatedImage.style.display = 'block';
-                } else {
-                    generatedImage.style.display = 'none';
                 }
-                
-            } catch (error) {
-                console.error('Error:', error);
-                outputText.textContent = `Error: ${error.message}`;
+
+                conversationHistory = result.conversation || [];
+
+            } catch (err) {
+                outputText.textContent = `Error: ${err.message}`;
+                console.error(err);
             } finally {
                 submitBtn.disabled = false;
             }
         });
     </script>
+
 </body>
 </html>
