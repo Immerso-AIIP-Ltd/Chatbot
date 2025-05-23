@@ -167,10 +167,10 @@ def ayurveda_consult():
     if generate_visual:
         try:
             image_prompt = (
-                f"Traditional Ayurvedic illustration in classical Indian art style. "
-                f"Subject: {full_prompt  if full_prompt else 'Ayurvedic healing practices'}. "
-                f"Include elements like herbs, yoga poses, dosha symbols, or healing practices."
-                f"Use warm, natural colors and intricate details."
+                f"A high-resolution, ultra-realistic photograph that visually answers the question: '{full_prompt if full_prompt else 'an Ayurvedic healing scene'}'. "
+                f"The scene must reflect authentic Ayurvedic context, including elements like herbs, treatments, oils, rituals, or natural remedies. "
+                f"Use natural lighting, realistic textures, and photographic clarity as if captured with a professional DSLR camera. "
+                f"The setting should appear organic, serene, and true to real life — not illustrated or stylized."
             )
 
             image_response = client.images.generate(
