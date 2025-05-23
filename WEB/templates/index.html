@@ -302,9 +302,9 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
+                // audioChunks = [];
 
-                mediaRecorder.ondataavailable = event => {
+                mediaRecorder.ondataavailable = function(event) {
                     if (event.data.size > 0) audioChunks.push(event.data);
                 };
 
@@ -314,7 +314,7 @@
                     audioPlayback.style.display = 'block';
                     recordingStatus.textContent = 'Recording complete. Ready to submit.';
                 };
-
+                audioChunks=[];
                 mediaRecorder.start();
                 startRecordingBtn.disabled = true;
                 stopRecordingBtn.disabled = false;
@@ -331,6 +331,8 @@
                 mediaRecorder.stream.getTracks().forEach(track => track.stop());
                 startRecordingBtn.disabled = false;
                 stopRecordingBtn.disabled = true;
+
+                mediaRecorder.stream.getTracks().forEach(track => track.stop()); 
             }
         });
 

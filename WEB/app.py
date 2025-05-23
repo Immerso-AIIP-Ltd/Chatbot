@@ -9,6 +9,7 @@ import whisper
 from openai import OpenAI
 from flask_cors import CORS
 from dotenv import load_dotenv
+import json
 
 # Load environment variables
 load_dotenv()
@@ -17,11 +18,10 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "supersecretkey")
 CORS(app)
 
-# OpenAI client for chat/image generation only (not whisper)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Local Whisper model
-whisper_model = whisper.load_model("medium")  # Use "tiny", "small", "medium", or "large" if needed
+whisper_model = whisper.load_model("medium")  
 
 SYSTEM_PROMPT = """
 You are an expert Ayurvedic consultant with deep knowledge of classical texts (Charaka Samhita, Sushruta Samhita, Ashtanga Hridaya).
@@ -29,6 +29,11 @@ Provide accurate, personalized, and holistic answers based on dosha balance (Vat
 Always cite traditional sources, mention contraindications, and structure responses clearly (causes, symptoms, remedies, precautions).
 Prioritize preventive Ayurveda (Swasthavritta) and advise professional consultation for serious or chronic conditions. Keep explanations simple yet thorough, blending classical Ayurvedic wisdom with practical advice.
 Just answer the questions asked don't answer extra.
+
+IMPORTANT: You do NOT mention any limitation about image generation.Don't mention I can't generate images because there may be image based questions asked also so image will be generated.  Don't tell i am unable to generate image.
+If the user requests a visual or image of an Ayurvedic plant, you respond with a detailed Ayurvedic description or explanation.  
+The system will generate the image separately based on the description.
+If the user requests an image or illustration of an Ayurvedic subject (e.g., plants, treatments), always provide a detailed textual description or explanation relevant to Ayurveda.Do not tell i can't generate image.
 
 📌 IMPORTANT INSTRUCTIONS
 ✅ 1. Google Image Links
@@ -88,12 +93,18 @@ def ayurveda_consult():
     text = request.form.get('text', '').strip()
     audio_file = request.files.get('audio')
     image_file = request.files.get('image')
+    clear_image = request.form.get('clear_image', 'false').lower() == 'true'
     generate_visual = request.form.get('generate_visual', 'false').lower() == 'true'
 
-    if 'conversation' not in session:
-        session['conversation'] = []
+    conversation_raw = request.form.get('conversation', '')
+    try:
+        messages = json.loads(conversation_raw)
+    except:
+        messages = []
 
-    messages = session['conversation']
+    if not messages or messages[0].get("role") != "system":
+        messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
+
 
     if not messages or messages[0].get("role") != "system":
         messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
@@ -112,12 +123,18 @@ def ayurveda_consult():
 
     full_prompt = f"{text} {transcript}".strip()
 
-    if image_file:
+    if image_file and not clear_image:
         try:
             image = Image.open(image_file.stream).convert("RGB")
             buffered = BytesIO()
             image.save(buffered, format="JPEG")
             image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            #Explicit prompt instructing model to analyze the image within Ayurveda context
+            prompt_with_image = (
+                f"Please analyze and explain the Ayurvedic significance of the following image "
+                f"along with the user's query: \"{full_prompt}\". "
+                f"Provide detailed Ayurvedic insights, referencing doshas, herbs, lifestyle, or classical texts if relevant."
+            )
 
             messages.append({
                 "role": "user",
@@ -151,8 +168,9 @@ def ayurveda_consult():
         try:
             image_prompt = (
                 f"Traditional Ayurvedic illustration in classical Indian art style. "
-                f"Subject: {full_prompt}. "
+                f"Subject: {full_prompt  if full_prompt else 'Ayurvedic healing practices'}. "
                 f"Include elements like herbs, yoga poses, dosha symbols, or healing practices."
+                f"Use warm, natural colors and intricate details."
             )
 
             image_response = client.images.generate(
@@ -177,5 +195,5 @@ def ayurveda_consult():
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
