@@ -1,5 +1,5 @@
 
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -7,367 +7,706 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ayurvedic Multimodal Consultant</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #7eb78c 0%, #a8c698 100%);
+        } */
+
         body {
-            font-family: 'Arial', sans-serif;
-            line-height: 1.6;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            color: #333;
-            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            position: relative;
         }
-        h1 {
-            color: #2c7d59;
+
+        body::before {
+            content: "";
+            background: url('/static/background.png') no-repeat center center/cover;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+            z-index: -1;
+            filter: blur(0.5px); /* or remove this line for no blur */
+            transform: scale(1.02); /* slight zoom to avoid border gaps */
+            opacity: 0.95; /* subtle transparency */
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(126, 183, 140, 0.2);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar.mobile-hidden {
+            transform: translateX(-100%);
+        }
+
+        .logo-section {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(126, 183, 140, 0.2);
             text-align: center;
-            margin-bottom: 30px;
         }
-        .container {
-            background-color: white;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+        .logo-section img {
+            height: 40px;
+            width: auto;
+            margin-bottom: 8px;
         }
-        .header-container {
+
+        .logo-text {
+            font-size: 14px;
+            color: #2c7d59;
+            font-weight: 600;
+        }
+
+        .nav-menu {
+            flex: 1;
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #4a4a4a;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .nav-item:hover {
+            background: rgba(126, 183, 140, 0.1);
+            color: #2c7d59;
+        }
+
+        .nav-item.active {
+            background: rgba(126, 183, 140, 0.15);
+            color: #2c7d59;
+            border-right: 3px solid #2c7d59;
+        }
+
+        .nav-icon {
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            margin-bottom: 30px;
-            }
+            font-size: 12px;
+        }
 
-        .header-container img {
-            height: 50px;
-            width: auto;
-            }
+        .nav-icon.new-chat { background: #4CAF50; color: white; }
+        .nav-icon.history { background: #2196F3; color: white; }
+        .nav-icon.saved { background: #FF9800; color: white; }
+        .nav-icon.settings { background: #9E9E9E; color: white; }
+        .nav-icon.logout { background: #f44336; color: white; }
 
-        .header-container h1 {
-            margin: 0;
-            color: #2c7d59;
-            }
-        .input-section {
-            margin-bottom: 20px;
+        /* Main Content Area */
+        /* .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="bg" cx="50%" cy="30%"><stop offset="0%" style="stop-color:%23ffffff;stop-opacity:0.3"/><stop offset="100%" style="stop-color:%23ffffff;stop-opacity:0"/></radialGradient></defs><rect width="100%" height="100%" fill="url(%23bg)"/></svg>'),
+                    linear-gradient(135deg, rgba(126, 183, 140, 0.8) 0%, rgba(168, 198, 152, 0.9) 100%);
+        } */
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: rgba(255, 255, 255, 0.01);
         }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #2c7d59;
-        }
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            min-height: 100px;
-            resize: vertical;
-        }
-        .image-upload {
-            margin: 15px 0;
-        }
-        #imagePreview {
-            max-width: 300px;
-            max-height: 300px;
-            margin-top: 10px;
-            display: none;
-        }
-        .audio-controls {
-            margin: 15px 0;
+
+        /* Header */
+        .header {
+            padding: 20px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             display: flex;
             align-items: center;
-            gap: 10px;
-        }
-        button {
-            background-color: #2c7d59;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #1f5e43;
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        #visualCheckbox {
-            margin: 15px 0;
-        }
-        .output-section {
-            margin-top: 30px;
-        }
-        #outputText {
-            width: 100%;
-            min-height: 300px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-            white-space: pre-wrap;
-        }
-        #generatedImage {
-            max-width: 100%;
-            margin-top: 15px;
-            display: none;
-        }
-        .status {
-            margin: 10px 0;
-            font-style: italic;
-            color: #666;
-        }
-        /* Clear Image Button */
-        #clearImageBtn {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: #ff4d4d;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            font-weight: bold;
-            display: none;
-            cursor: pointer;
-            line-height: 20px;
-            padding: 0;
-        }
-   
-        .image-preview-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        #chatbox {
-            max-height: 400px;
-            overflow-y: auto;
-            background-color: #fff;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            margin-top: 20px;
+            justify-content: space-between;
         }
 
-        .user-message, .bot-message {
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
+        .header-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e2d;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-with-bg {
+            position: relative;
+            background-image: url('/static/sublogo.png'); /* your background image */
+            background-size: cover;      /* cover entire header area */
+            background-position: center; /* center the image */
+            background-repeat: no-repeat;
+            padding: 40px 20px;          /* some padding to make space for text */
+            color: white;                /* text color for contrast */
+            font-weight: bold;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            justify-content: center; /* so title on left, toggle on right */
+        }
+
+        .header-title {
+            position: relative;
+            z-index: 2;                  /* on top of the background */
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7); /* improves readability */
+             text-align: center;
+        }
+
+        /* Optional: add a semi-transparent overlay if needed for better text contrast */
+        /* .header-with-bg::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.3); /* black overlay with transparency */
+            /* z-index: 1;
+        } */ 
+
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #2c3e2d;
+            cursor: pointer;
+        }
+
+        /* Chat Area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 30px;
+            overflow: hidden;
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #2c3e2d;
+            font-size: 18px;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .message {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 12px;
             max-width: 80%;
             word-wrap: break-word;
         }
 
         .user-message {
-            background-color: #d0f0e8;
-            align-self: flex-end;
+            background: rgba(255, 255, 255, 0.9);
             margin-left: auto;
+            color: #2c3e2d;
         }
 
         .bot-message {
-            background-color: #e0e0e0;
-            align-self: flex-start;
+            background: rgba(44, 125, 89, 0.1);
             margin-right: auto;
+            color: #2c3e2d;
+            border: 1px solid rgba(44, 125, 89, 0.2);
         }
 
+        /* Input Area */
+        .input-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid rgba(126, 183, 140, 0.3);
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .text-input:focus {
+            border-color: #2c7d59;
+        }
+
+        .action-button {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 18px;
+        }
+
+        .send-btn {
+            background: #2c7d59;
+            color: white;
+        }
+
+        .send-btn:hover {
+            background: #1f5e43;
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .attachment-btn {
+            background: rgba(126, 183, 140, 0.2);
+            color: #2c7d59;
+        }
+
+        .attachment-btn:hover {
+            background: rgba(126, 183, 140, 0.3);
+        }
+
+        .mic-btn {
+            background: rgba(255, 99, 71, 0.2);
+            color: #ff6347;
+        }
+
+        .mic-btn:hover {
+            background: rgba(255, 99, 71, 0.3);
+        }
+
+        .mic-btn.recording {
+            background: #ff6347;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Additional Controls */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .image-preview {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #2c3e2d;
+            font-size: 14px;
+        }
+
+        .status-text {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .audio-playback {
+            display: none;
+            margin-top: 10px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 280px;
+                z-index: 1000;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .header-title {
+                font-size: 20px;
+            }
+
+            .chat-container {
+                padding: 15px 20px;
+            }
+
+            .welcome-message {
+                font-size: 16px;
+                margin-bottom: 20px;
+            }
+
+            .input-container {
+                padding: 15px;
+            }
+
+            .input-row {
+                flex-wrap: wrap;
+            }
+
+            .controls-row {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 260px;
+            }
+
+            .header-title {
+                font-size: 18px;
+            }
+
+            .welcome-message {
+                font-size: 14px;
+            }
+
+            .input-container {
+                padding: 12px;
+            }
+
+            .text-input {
+                font-size: 13px;
+            }
+
+            .action-button {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+
+        /* Backdrop for mobile */
+        .backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .backdrop.show {
+            display: block;
+        }
+
+        /* Loading state */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2c7d59;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header-container">
-            <img src="/static/logo.png" alt="Logo" />
-            <h1>🧘 Ayurvedic Multimodal Consultant</h1>
-            <div style="text-align:right; margin-bottom:10px;">
-                <button id="newChatBtn" style="background-color:#ff4d4d;">New Chat</button>
+    <div class="app-container">
+        <!-- Backdrop for mobile -->
+        <div class="backdrop" id="backdrop"></div>
+        
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo-section">
+                <img src="/static/logo.png" alt="Logo" id="logoImg" />
+                <div class="logo-text">UNIVERSE</div>
+            </div>
+            
+            <div class="nav-menu">
+                <button class="nav-item active" id="newChatBtn">
+                    <div class="nav-icon new-chat">+</div>
+                    New Chat
+                </button>
+                <button class="nav-item">
+                    <div class="nav-icon history">📋</div>
+                    History Chat
+                </button>
+                <button class="nav-item">
+                    <div class="nav-icon saved">💾</div>
+                    Saved Chat
+                </button>
+                <button class="nav-item">
+                    <div class="nav-icon settings">⚙️</div>
+                    Settings
+                </button>
+                <button class="nav-item">
+                    <div class="nav-icon logout">🚪</div>
+                    Log Out
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header header-with-bg">
+                <div class="header-title">Ayurvedic Multimodal Consultant</div>
+                <button class="mobile-toggle" id="mobileToggle">☰</button>
             </div>
 
-        </div>
+            <div class="chat-container">
+                <div class="welcome-message">
+                    Welcome to your Ayurvedic health consultation. How can I help you today?
+                </div>
 
-        
-        <div class="input-section">
-            <label for="textInput">Ask a question (text)</label>
-            <textarea id="textInput" placeholder="E.g., How to balance Vata dosha?"></textarea>
-        </div>
-        
-        <div class="input-section">
-            <label for="imageInput">Upload an image (optional)</label>
-            <input type="file" id="imageInput" accept="image/*" class="image-upload" />
-            <div class="image-preview-wrapper">
-                <img id="imagePreview" alt="Preview" />
-                <button id="clearImageBtn" title="Clear Image">&times;</button>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Messages will appear here -->
+                </div>
+
+                <div class="input-container">
+                    <div class="input-row">
+                        <input type="text" class="text-input" id="textInput" placeholder="Ask about Ayurvedic health, doshas, remedies..." />
+                        <button class="action-button attachment-btn" id="attachmentBtn" title="Attach Image">📎</button>
+                        <button class="action-button mic-btn" id="micBtn" title="Voice Input">🎤</button>
+                        <button class="action-button send-btn" id="sendBtn" title="Send Message">➤</button>
+                    </div>
+                    
+                    <div class="controls-row">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="generateVisual" />
+                            <label for="generateVisual">Generate visual content</label>
+                        </div>
+                        <div class="status-text" id="statusText">Ready to chat</div>
+                    </div>
+
+                    <input type="file" class="file-input" id="imageInput" accept="image/*" />
+                    <img class="image-preview" id="imagePreview" alt="Preview" />
+                    <audio class="audio-playback" id="audioPlayback" controls></audio>
+                </div>
             </div>
-        </div>
-        
-        <div class="input-section">
-            <label>Speak your query</label>
-            <div class="audio-controls">
-                <button id="startRecording">Start Recording</button>
-                <button id="stopRecording" disabled>Stop Recording</button>
-                <audio id="audioPlayback" controls style="display: none;"></audio>
-            </div>
-            <div id="recordingStatus" class="status">Ready to record</div>
-        </div>
-        
-        <div id="visualCheckbox">
-            <input type="checkbox" id="generateVisual" />
-            <label for="generateVisual">Click checkbox to generate image</label>
-        </div>
-        
-        <button id="submitBtn">Get Ayurvedic Advice</button>
-        <div id="chatbox"></div>
-        
-        <div class="output-section">
-            <label for="outputText">Response</label>
-            <div id="outputText"></div>
-            <img id="generatedImage" alt="Click checkbox to generate image" />
         </div>
     </div>
+
     <script>
-        
+        // Global variables
+        let mediaRecorder, audioChunks = [], audioBlob = null;
+        let conversationHistory = [];
+        let isRecording = false;
 
-        document.getElementById("sendBtn").addEventListener("click", sendMessage);
-        document.getElementById("userInput").addEventListener("keypress", function (e) {
-            if (e.key === "Enter") sendMessage();
-        });
-
-        document.getElementById("newChatBtn").addEventListener("click", async function () {
-            const response = await fetch("/new-chat", { method: "POST" });
-            conversationHistory = [];
-            document.getElementById("chatbox").innerHTML = "";
-        });
-
-        async function sendMessage() {
-            const userInput = document.getElementById("userInput").value.trim();
-            if (!userInput) return;
-
-            conversationHistory.push({ role: "user", content: userInput });
-
-            const chatbox = document.getElementById("chatbox");
-            chatbox.innerHTML += `<div class="message user">You: ${userInput}</div>`;
-            document.getElementById("userInput").value = "";
-
-            const response = await fetch("/ayurveda-consult", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: conversationHistory })
-            });
-
-            const data = await response.json();
-            const assistantReply = data.reply;
-            conversationHistory.push({ role: "assistant", content: assistantReply });
-
-            chatbox.innerHTML += `<div class="message assistant">Assistant: ${assistantReply}</div>`;
-            chatbox.scrollTop = chatbox.scrollHeight;
-        }
-        </script>
-
-   <script>
+        // DOM elements
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('backdrop');
+        const mobileToggle = document.getElementById('mobileToggle');
         const textInput = document.getElementById('textInput');
         const imageInput = document.getElementById('imageInput');
         const imagePreview = document.getElementById('imagePreview');
-        const clearImageBtn = document.getElementById('clearImageBtn');
-        const startRecordingBtn = document.getElementById('startRecording');
-        const stopRecordingBtn = document.getElementById('stopRecording');
-        const audioPlayback = document.getElementById('audioPlayback');
-        const recordingStatus = document.getElementById('recordingStatus');
+        const attachmentBtn = document.getElementById('attachmentBtn');
+        const micBtn = document.getElementById('micBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatMessages = document.getElementById('chatMessages');
         const generateVisual = document.getElementById('generateVisual');
-        const submitBtn = document.getElementById('submitBtn');
+        const statusText = document.getElementById('statusText');
+        const audioPlayback = document.getElementById('audioPlayback');
         const newChatBtn = document.getElementById('newChatBtn');
-        const outputText = document.getElementById('outputText');
-        const generatedImage = document.getElementById('generatedImage');
 
-        let mediaRecorder, audioChunks = [], audioBlob = null;
-        let conversationHistory = [];
+        // Mobile sidebar toggle
+        mobileToggle.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('mobile-hidden');
+                backdrop.classList.toggle('show');
+            }
+        });
 
-        imageInput.addEventListener('change', function (e) {
+        backdrop.addEventListener('click', () => {
+            sidebar.classList.add('mobile-hidden');
+            backdrop.classList.remove('show');
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('mobile-hidden');
+                backdrop.classList.remove('show');
+            }
+        });
+
+        // Image attachment
+        attachmentBtn.addEventListener('click', () => {
+            imageInput.click();
+        });
+
+        imageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function (event) {
+                reader.onload = function(event) {
                     imagePreview.src = event.target.result;
                     imagePreview.style.display = 'block';
-                    clearImageBtn.style.display = 'block';
+                    statusText.textContent = 'Image attached';
                 };
                 reader.readAsDataURL(file);
             }
         });
 
-        clearImageBtn.addEventListener('click', function () {
-            imagePreview.src = '';
-            imagePreview.style.display = 'none';
-            clearImageBtn.style.display = 'none';
-            imageInput.value = '';
-        });
+        // Audio recording
+        micBtn.addEventListener('click', async () => {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
 
-        startRecordingBtn.addEventListener('click', async function () {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                // audioChunks = [];
+                    mediaRecorder.ondataavailable = function(event) {
+                        if (event.data.size > 0) audioChunks.push(event.data);
+                    };
 
-                mediaRecorder.ondataavailable = function(event) {
-                    if (event.data.size > 0) audioChunks.push(event.data);
-                };
+                    mediaRecorder.onstop = () => {
+                        audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        audioPlayback.src = URL.createObjectURL(audioBlob);
+                        audioPlayback.style.display = 'block';
+                        statusText.textContent = 'Audio recorded. Ready to send.';
+                    };
 
-                mediaRecorder.onstop = () => {
-                    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    audioPlayback.src = URL.createObjectURL(audioBlob);
-                    audioPlayback.style.display = 'block';
-                    recordingStatus.textContent = 'Recording complete. Ready to submit.';
-                };
-                audioChunks=[];
-                mediaRecorder.start();
-                startRecordingBtn.disabled = true;
-                stopRecordingBtn.disabled = false;
-                recordingStatus.textContent = 'Recording...';
-            } catch (error) {
-                console.error(error);
-                recordingStatus.textContent = 'Microphone error. Check permissions.';
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.classList.add('recording');
+                    statusText.textContent = 'Recording...';
+                } catch (error) {
+                    console.error(error);
+                    statusText.textContent = 'Microphone access denied';
+                }
+            } else {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                    isRecording = false;
+                    micBtn.classList.remove('recording');
+                }
             }
         });
 
-        stopRecordingBtn.addEventListener('click', () => {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                startRecordingBtn.disabled = false;
-                stopRecordingBtn.disabled = true;
-
-                mediaRecorder.stream.getTracks().forEach(track => track.stop()); 
+        // Send message
+        sendBtn.addEventListener('click', sendMessage);
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
             }
         });
 
-        newChatBtn.addEventListener('click', async function () {
-            await fetch('/new-chat', { method: 'POST' });
-            conversationHistory = [];
-
-            textInput.value = '';
-            imagePreview.src = '';
-            imagePreview.style.display = 'none';
-            clearImageBtn.style.display = 'none';
-            audioBlob = null;
-            audioPlayback.src = '';
-            audioPlayback.style.display = 'none';
-            outputText.textContent = '';
-            generatedImage.src = '';
-            generatedImage.style.display = 'none';
-            recordingStatus.textContent = 'Ready to record';
-
-            document.getElementById("chatbox").innerHTML = '';
-        });
-
-        submitBtn.addEventListener('click', async () => {
+        async function sendMessage() {
             const text = textInput.value.trim();
             const generateImage = generateVisual.checked;
 
             if (!text && !audioBlob && !imageInput.files[0]) {
-                outputText.textContent = 'Please enter text, image, or audio.';
+                statusText.textContent = 'Please enter text, image, or audio.';
                 return;
             }
 
-            submitBtn.disabled = true;
-            outputText.textContent = 'Thinking...';
-            generatedImage.style.display = 'none';
-            generatedImage.src = '';
+            // Show user message
+            if (text || imageInput.files[0] || audioBlob) {
+                const userMessage = document.createElement('div');
+                userMessage.className = 'message user-message';
+                userMessage.innerHTML = `<strong>You:</strong> ${text || '[Voice/Image input]'}`;
+                chatMessages.appendChild(userMessage);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // Show loading
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'message bot-message';
+            loadingMessage.innerHTML = '<strong>Assistant:</strong> <span class="loading"></span> Thinking...';
+            chatMessages.appendChild(loadingMessage);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            sendBtn.disabled = true;
+            statusText.textContent = 'Processing...';
 
             try {
                 const formData = new FormData();
@@ -385,50 +724,83 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const result = await response.json();
-                const chatbox = document.getElementById('chatbox');
 
-                const userBubble = document.createElement('div');
-                userBubble.className = 'user-message';
-                userBubble.innerHTML = `<strong>You:</strong> ${text || '[Voice/Image]'}`;
-                chatbox.appendChild(userBubble);
+                // Remove loading message
+                chatMessages.removeChild(loadingMessage);
+
                 if (result.text) {
-                    const botBubble = document.createElement('div');
-                    botBubble.className = 'bot-message';
-                    botBubble.innerHTML = `<strong>Assistant:</strong> ${marked.parse(result.text)}`;
-                    chatbox.appendChild(botBubble);
+                    const botMessage = document.createElement('div');
+                    botMessage.className = 'message bot-message';
+                    botMessage.innerHTML = `<strong>Assistant:</strong> ${marked.parse(result.text)}`;
+                    chatMessages.appendChild(botMessage);
                 } else {
-                    const errorBubble = document.createElement('div');
-                    errorBubble.className = 'bot-message';
-                    errorBubble.innerHTML = `<strong>Assistant:</strong> No response.`;
-                    chatbox.appendChild(errorBubble);
+                    const errorMessage = document.createElement('div');
+                    errorMessage.className = 'message bot-message';
+                    errorMessage.innerHTML = '<strong>Assistant:</strong> Sorry, I could not process your request.';
+                    chatMessages.appendChild(errorMessage);
                 }
 
                 if (result.image) {
-                    const image = document.createElement('img');
-                    image.src = 'data:image/jpeg;base64,' + result.image;
-                    image.style.maxWidth = '100%';
-                    image.style.marginTop = '1rem';
-                    chatbox.appendChild(image);
-                }
-
-                chatbox.scrollTop = chatbox.scrollHeight;
-
-
-                if (result.image) {
-                    generatedImage.src = `data:image/jpeg;base64,${result.image}`;
-                    generatedImage.style.display = 'block';
+                    const imageElement = document.createElement('img');
+                    imageElement.src = `data:image/jpeg;base64,${result.image}`;
+                    imageElement.style.maxWidth = '100%';
+                    imageElement.style.marginTop = '10px';
+                    imageElement.style.borderRadius = '8px';
+                    chatMessages.appendChild(imageElement);
                 }
 
                 conversationHistory = result.conversation || [];
+                chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            } catch (err) {
-                outputText.textContent = `Error: ${err.message}`;
-                console.error(err);
+            } catch (error) {
+                // Remove loading message
+                chatMessages.removeChild(loadingMessage);
+                
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'message bot-message';
+                errorMessage.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                chatMessages.appendChild(errorMessage);
+                console.error(error);
             } finally {
-                submitBtn.disabled = false;
+                sendBtn.disabled = false;
+                statusText.textContent = 'Ready to chat';
+                
+                // Clear inputs
+                textInput.value = '';
+                imageInput.value = '';
+                imagePreview.style.display = 'none';
+                audioBlob = null;
+                audioPlayback.style.display = 'none';
+                generateVisual.checked = false;
+            }
+        }
+
+        // New chat functionality
+        newChatBtn.addEventListener('click', async () => {
+            try {
+                await fetch('/new-chat', { method: 'POST' });
+                conversationHistory = [];
+                chatMessages.innerHTML = '';
+                textInput.value = '';
+                imageInput.value = '';
+                imagePreview.style.display = 'none';
+                audioBlob = null;
+                audioPlayback.style.display = 'none';
+                generateVisual.checked = false;
+                statusText.textContent = 'New chat started';
+            } catch (error) {
+                console.error('Error starting new chat:', error);
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial mobile state
+            if (window.innerWidth <= 768) {
+                sidebar.classList.add('mobile-hidden');
             }
         });
     </script>
-
 </body>
 </html>
+
