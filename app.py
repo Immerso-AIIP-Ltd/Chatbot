@@ -3,9 +3,7 @@ import os
 import base64
 from io import BytesIO
 from PIL import Image
-import tempfile
 import requests
-import whisper
 from openai import OpenAI
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -19,9 +17,6 @@ app.secret_key = os.getenv("SECRET_KEY", "supersecretkey")
 CORS(app)
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-# Local Whisper model
-whisper_model = whisper.load_model("medium")  
 
 SYSTEM_PROMPT = """
 You are an expert Ayurvedic consultant with deep knowledge of classical texts (Charaka Samhita, Sushruta Samhita, Ashtanga Hridaya).
@@ -49,7 +44,7 @@ https://www.google.com/search?q=<REMEDY+NAME>&tbm=isch
 ✅ 2. Real-Time Reference Links (Websites / YouTube / Blog Articles)
 For every remedy or condition, provide working and accessible reference links that are:
 
-Directly related to the user's query (e.g., “remedies for hair fall in Ayurveda”)
+Directly related to the user's query (e.g., "remedies for hair fall in Ayurveda")
 
 From trusted health or Ayurveda websites
 
@@ -105,20 +100,19 @@ def ayurveda_consult():
     if not messages or messages[0].get("role") != "system":
         messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
 
-
-    if not messages or messages[0].get("role") != "system":
-        messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
-
     transcript = ""
     if audio_file:
         try:
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-                audio_file.save(tmp.name)
-                result = whisper_model.transcribe(tmp.name)
-                transcript = result["text"]
-            os.unlink(tmp.name)
+            # Use OpenAI's Whisper API for transcription
+            audio_file.seek(0)  # Reset file pointer to beginning
+            transcript_response = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+                response_format="text"
+            )
+            transcript = transcript_response
         except Exception as e:
-            print(f"Audio error: {e}")
+            print(f"Audio transcription error: {e}")
             transcript = "[Audio transcription failed]"
 
     full_prompt = f"{text} {transcript}".strip()
@@ -129,13 +123,7 @@ def ayurveda_consult():
             buffered = BytesIO()
             image.save(buffered, format="JPEG")
             image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
-            #Explicit prompt instructing model to analyze the image within Ayurveda context
-            prompt_with_image = (
-                f"Please analyze and explain the Ayurvedic significance of the following image "
-                f"along with the user's query: \"{full_prompt}\". "
-                f"Provide detailed Ayurvedic insights, referencing doshas, herbs, lifestyle, or classical texts if relevant."
-            )
-
+            
             messages.append({
                 "role": "user",
                 "content": [
@@ -144,7 +132,7 @@ def ayurveda_consult():
                 ]
             })
         except Exception as e:
-            print(f"Image error: {e}")
+            print(f"Image processing error: {e}")
             if full_prompt:
                 messages.append({"role": "user", "content": full_prompt})
     else:
@@ -197,4 +185,3 @@ def ayurveda_consult():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
