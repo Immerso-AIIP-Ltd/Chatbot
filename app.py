@@ -9,16 +9,25 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import json
 import logging
+from flask_session import Session
+import redis
 
 # Configure logging for better debugging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "supersecretkey")
+
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_REDIS'] = redis.from_url(os.getenv("REDIS_URL"))  # set on Heroku
+Session(app)
 
 # Enhanced CORS configuration for Netlify frontend
 CORS(app, origins=["*"], supports_credentials=True, 
