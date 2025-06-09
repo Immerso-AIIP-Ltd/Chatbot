@@ -11,6 +11,8 @@ import json
 import logging
 from flask_session import Session
 import redis
+import os
+import urllib.parse
 
 # Configure logging for better debugging
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +28,24 @@ app.secret_key = os.getenv("SECRET_KEY", "supersecretkey")
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_REDIS'] = redis.from_url(os.getenv("REDIS_URL"))
+
+
+redis_url = os.getenv("REDIS_URL")
+
+if redis_url:
+    url = urllib.parse.urlparse(redis_url)
+    pool = redis.ConnectionPool(
+        host=url.hostname,
+        port=url.port,
+        password=url.password,
+        ssl=True,
+        ssl_cert_reqs=None,
+        db=0
+    )
+    r = redis.Redis(connection_pool=pool)
+else:
+    r = None
+
 # redis_url = os.getenv("REDIS_URL")
 # if redis_url:
 #     app.config['SESSION_REDIS'] = redis.from_url(redis_url)
