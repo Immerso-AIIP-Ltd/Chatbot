@@ -26,7 +26,10 @@ app.secret_key = os.getenv("SECRET_KEY", "supersecretkey")
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_REDIS'] = redis.from_url(os.getenv("REDIS_URL"))  # set on Heroku
+redis_url = os.getenv("REDIS_URL")
+if redis_url:
+    app.config['SESSION_REDIS'] = redis.from_url(redis_url)
+
 Session(app)
 
 # Enhanced CORS configuration for Netlify frontend
