@@ -8,13 +8,22 @@ from openai import OpenAI
 from flask_cors import CORS
 from dotenv import load_dotenv
 import json
+import logging
+
+# Configure logging for better debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "supersecretkey")
-CORS(app)
+
+# Enhanced CORS configuration for Netlify frontend
+CORS(app, origins=["*"], supports_credentials=True, 
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "OPTIONS"])
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -80,107 +89,205 @@ def home():
 
 @app.route('/new-chat', methods=['POST'])
 def new_chat():
-    session['conversation'] = []
-    return jsonify({"message": "Conversation reset successfully"})
-
-@app.route('/ayurveda-consult', methods=['POST'])
-def ayurveda_consult():
-    text = request.form.get('text', '').strip()
-    audio_file = request.files.get('audio')
-    image_file = request.files.get('image')
-    clear_image = request.form.get('clear_image', 'false').lower() == 'true'
-    generate_visual = request.form.get('generate_visual', 'false').lower() == 'true'
-
-    conversation_raw = request.form.get('conversation', '')
     try:
-        messages = json.loads(conversation_raw)
-    except:
-        messages = []
+        session['conversation'] = []
+        return jsonify({"message": "Conversation reset successfully"})
+    except Exception as e:
+        logger.error(f"New chat error: {e}")
+        return jsonify({"error": "Failed to reset conversation"}), 500
 
-    if not messages or messages[0].get("role") != "system":
-        messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
+@app.route('/ayurveda-consult', methods=['POST', 'OPTIONS'])
+def ayurveda_consult():
+    # Handle preflight requests
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
+    try:
+        # Enhanced logging for debugging
+        logger.info(f"Request method: {request.method}")
+        logger.info(f"Content type: {request.content_type}")
+        logger.info(f"Form data keys: {list(request.form.keys())}")
+        logger.info(f"Files: {list(request.files.keys())}")
+        
+        text = request.form.get('text', '').strip()
+        audio_file = request.files.get('audio')
+        image_file = request.files.get('image')
+        clear_image = request.form.get('clear_image', 'false').lower() == 'true'
+        generate_visual = request.form.get('generate_visual', 'false').lower() == 'true'
 
-    transcript = ""
-    if audio_file:
+        conversation_raw = request.form.get('conversation', '')
         try:
-            # Use OpenAI's Whisper API for transcription
-            audio_file.seek(0)  # Reset file pointer to beginning
-            transcript_response = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                response_format="text"
-            )
-            transcript = transcript_response
-        except Exception as e:
-            print(f"Audio transcription error: {e}")
-            transcript = "[Audio transcription failed]"
+            messages = json.loads(conversation_raw) if conversation_raw else []
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {e}")
+            messages = []
 
-    full_prompt = f"{text} {transcript}".strip()
+        if not messages or messages[0].get("role") != "system":
+            messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
 
-    if image_file and not clear_image:
-        try:
-            image = Image.open(image_file.stream).convert("RGB")
-            buffered = BytesIO()
-            image.save(buffered, format="JPEG")
-            image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
-            
-            messages.append({
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": full_prompt},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
-                ]
-            })
-        except Exception as e:
-            print(f"Image processing error: {e}")
+        transcript = ""
+        if audio_file:
+            try:
+                logger.info("Processing audio file...")
+                # Ensure audio file is valid and readable
+                audio_file.seek(0)
+                
+                # Check file size (Heroku has memory limits)
+                audio_file.seek(0, 2)  # Seek to end
+                file_size = audio_file.tell()
+                audio_file.seek(0)  # Reset to beginning
+                
+                if file_size > 25 * 1024 * 1024:  # 25MB limit for OpenAI Whisper
+                    raise ValueError("Audio file too large")
+                
+                transcript_response = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    response_format="text"
+                )
+                transcript = transcript_response
+                logger.info(f"Audio transcription successful: {len(transcript)} characters")
+            except Exception as e:
+                logger.error(f"Audio transcription error: {e}")
+                transcript = "[Audio transcription failed]"
+
+        full_prompt = f"{text} {transcript}".strip()
+        logger.info(f"Full prompt length: {len(full_prompt)}")
+
+        if image_file and not clear_image:
+            try:
+                logger.info("Processing image file...")
+                # Reset file pointer and check file size
+                image_file.seek(0, 2)
+                file_size = image_file.tell()
+                image_file.seek(0)
+                
+                logger.info(f"Image file size: {file_size} bytes")
+                
+                # Check file size limit (20MB for safety on Heroku)
+                if file_size > 20 * 1024 * 1024:
+                    raise ValueError("Image file too large for processing")
+                
+                # Process image with error handling
+                try:
+                    image = Image.open(image_file.stream)
+                    # Convert to RGB if needed
+                    if image.mode != 'RGB':
+                        image = image.convert("RGB")
+                    
+                    # Resize image if too large to save memory
+                    max_size = (1024, 1024)
+                    image.thumbnail(max_size, Image.Resampling.LANCZOS)
+                    
+                    buffered = BytesIO()
+                    image.save(buffered, format="JPEG", quality=85, optimize=True)
+                    image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+                    
+                    logger.info(f"Image processed successfully, base64 length: {len(image_base64)}")
+                    
+                    messages.append({
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": full_prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+                        ]
+                    })
+                except Exception as img_error:
+                    logger.error(f"Image processing error: {img_error}")
+                    # Fall back to text-only if image processing fails
+                    if full_prompt:
+                        messages.append({"role": "user", "content": full_prompt})
+                    
+            except Exception as e:
+                logger.error(f"Image handling error: {e}")
+                if full_prompt:
+                    messages.append({"role": "user", "content": full_prompt})
+        else:
             if full_prompt:
                 messages.append({"role": "user", "content": full_prompt})
-    else:
-        if full_prompt:
-            messages.append({"role": "user", "content": full_prompt})
 
-    try:
-        chat_response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=messages,
-            max_tokens=4000
-        )
-        gpt_output = chat_response.choices[0].message.content
-        messages.append({"role": "assistant", "content": gpt_output})
-        session['conversation'] = messages 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # Ensure we have a user message
+        if len(messages) <= 1:  # Only system message
+            return jsonify({"error": "No user input provided"}), 400
 
-    generated_image = None
-    if generate_visual:
+        logger.info(f"Sending {len(messages)} messages to OpenAI")
+        
         try:
-            image_prompt = (
-                f"A high-resolution, ultra-realistic photograph that visually answers the question: '{full_prompt if full_prompt else 'an Ayurvedic healing scene'}'. "
-                f"The scene must reflect authentic Ayurvedic context, including elements like herbs, treatments, oils, rituals, or natural remedies. "
-                f"Use natural lighting, realistic textures, and photographic clarity as if captured with a professional DSLR camera. "
-                f"The setting should appear organic, serene, and true to real life — not illustrated or stylized."
+            chat_response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                max_tokens=4000,
+                timeout=60  # Add timeout for Heroku
             )
-
-            image_response = client.images.generate(
-                model="dall-e-3",
-                prompt=image_prompt,
-                size="1024x1024",
-                quality="standard",
-                n=1
-            )
-            image_url = image_response.data[0].url
-            response = requests.get(image_url)
-            if response.status_code == 200:
-                generated_image = base64.b64encode(response.content).decode("utf-8")
+            gpt_output = chat_response.choices[0].message.content
+            messages.append({"role": "assistant", "content": gpt_output})
+            session['conversation'] = messages
+            
+            logger.info(f"OpenAI response received, length: {len(gpt_output)}")
+            
         except Exception as e:
-            print(f"Image generation error: {e}")
-            gpt_output += "\n\n[Note: Could not generate illustration due to an error]"
+            logger.error(f"OpenAI API error: {e}")
+            return jsonify({"error": f"AI service error: {str(e)}"}), 500
 
-    return jsonify({
-        "text": gpt_output,
-        "image": generated_image,
-        "conversation": messages
-    })
+        generated_image = None
+        if generate_visual:
+            try:
+                logger.info("Generating visual...")
+                image_prompt = (
+                    f"A high-resolution, ultra-realistic photograph that visually answers the question: '{full_prompt if full_prompt else 'an Ayurvedic healing scene'}'. "
+                    f"The scene must reflect authentic Ayurvedic context, including elements like herbs, treatments, oils, rituals, or natural remedies. "
+                    f"Use natural lighting, realistic textures, and photographic clarity as if captured with a professional DSLR camera. "
+                    f"The setting should appear organic, serene, and true to real life — not illustrated or stylized."
+                )
+
+                image_response = client.images.generate(
+                    model="dall-e-3",
+                    prompt=image_prompt,
+                    size="1024x1024",
+                    quality="standard",
+                    n=1,
+                    timeout=120  # Longer timeout for image generation
+                )
+                image_url = image_response.data[0].url
+                
+                # Download and encode image with timeout
+                response = requests.get(image_url, timeout=60)
+                if response.status_code == 200:
+                    generated_image = base64.b64encode(response.content).decode("utf-8")
+                    logger.info("Image generated successfully")
+                else:
+                    logger.error(f"Failed to download generated image: {response.status_code}")
+                    
+            except Exception as e:
+                logger.error(f"Image generation error: {e}")
+                gpt_output += "\n\n[Note: Could not generate illustration due to an error]"
+
+        response_data = {
+            "text": gpt_output,
+            "image": generated_image,
+            "conversation": messages
+        }
+        
+        logger.info("Request completed successfully")
+        return jsonify(response_data)
+
+    except Exception as e:
+        logger.error(f"General error in ayurveda_consult: {e}")
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+# Add a health check endpoint
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy", "message": "API is running"}), 200
+
+# Error handlers
+@app.errorhandler(413)
+def too_large(e):
+    return jsonify({"error": "File too large"}), 413
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
