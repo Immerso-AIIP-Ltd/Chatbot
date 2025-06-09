@@ -29,22 +29,39 @@ app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
 
-
-redis_url = os.getenv("REDIS_URL")
-
-if redis_url:
-    url = urllib.parse.urlparse(redis_url)
-    pool = redis.ConnectionPool(
-        host=url.hostname,
-        port=url.port,
-        password=url.password,
+# Hardcoded Redis configuration
+try:
+    app.config['SESSION_REDIS'] = redis.Redis(
+        host='ec2-54-205-220-193.compute-1.amazonaws.com',
+        port=32110,
+        password='p226fd1f0a702673bef7716636ec58e31c21f5760e9af98f000061d8c42a48622',
         ssl=True,
         ssl_cert_reqs=None,
         db=0
     )
-    r = redis.Redis(connection_pool=pool)
-else:
-    r = None
+    logger.info("Redis configured with hardcoded credentials")
+    # Test connection
+    app.config['SESSION_REDIS'].ping()
+    logger.info("Redis connection successful")
+except redis.ConnectionError as e:
+    logger.error(f"Failed to connect to Redis: {e}")
+    raise
+
+# redis_url = os.getenv("REDIS_URL")
+
+# if redis_url:
+#     url = urllib.parse.urlparse(redis_url)
+#     pool = redis.ConnectionPool(
+#         host=url.hostname,
+#         port=url.port,
+#         password=url.password,
+#         ssl=True,
+#         ssl_cert_reqs=None,
+#         db=0
+#     )
+#     r = redis.Redis(connection_pool=pool)
+# else:
+#     r = None
 
 # redis_url = os.getenv("REDIS_URL")
 # if redis_url:
